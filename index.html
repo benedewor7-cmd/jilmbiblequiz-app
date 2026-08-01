@@ -3,24 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz App</title>
+    <title>Bible Quiz</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="quiz-container">
-    <h2 id="question">Question goes here</h2>
+<div class="container">
 
-    <div id="answer-buttons">
-        <button class="btn"></button>
-        <button class="btn"></button>
-        <button class="btn"></button>
-        <button class="btn"></button>
+    <div class="quiz-box">
+
+        <div class="header">
+            <h1>📖 Bible Quiz Challenge</h1>
+
+            <div class="top-info">
+                <span id="progress">Question 1 of 5</span>
+                <span id="timer">01:30</span>
+            </div>
+
+            <div class="progress-bar">
+                <div id="progress-fill"></div>
+            </div>
+
+        </div>
+
+        <div class="quiz-body">
+
+            <h2 id="question">
+                Loading Question...
+            </h2>
+
+            <div id="answer-buttons">
+                <!-- Buttons created by JavaScript -->
+            </div>
+
+        </div>
+
+        <div class="footer">
+
+            <button id="next-btn">
+                Next Question →
+            </button>
+
+        </div>
+
     </div>
 
-    <button id="next-btn">Next</button>
 </div>
 
 <script src="script.js"></script>
+
 </body>
 </html>
