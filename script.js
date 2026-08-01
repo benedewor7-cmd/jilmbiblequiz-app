@@ -1,29 +1,47 @@
 const questions = [
 {
-    question: "What does HTML stand for?",
+    question: "Who built the ark?",
     answers: [
-        {text:"Hyper Text Markup Language", correct:true},
-        {text:"High Transfer Machine Language", correct:false},
-        {text:"Hyperlinks Text Machine Language", correct:false},
-        {text:"Home Tool Markup Language", correct:false}
+        {text:"Abraham", correct:false},
+        {text:"Noah", correct:true},
+        {text:"Moses", correct:false},
+        {text:"David", correct:false}
     ]
 },
 {
-    question: "Which language styles web pages?",
+    question: "How many disciples did Jesus choose?",
     answers: [
-        {text:"HTML", correct:false},
-        {text:"CSS", correct:true},
-        {text:"Java", correct:false},
-        {text:"Python", correct:false}
+        {text:"10", correct:false},
+        {text:"11", correct:false},
+        {text:"12", correct:true},
+        {text:"13", correct:false}
     ]
 },
 {
-    question: "Which language makes websites interactive?",
+    question: "Who killed Goliath?",
     answers: [
-        {text:"CSS", correct:false},
-        {text:"JavaScript", correct:true},
-        {text:"HTML", correct:false},
-        {text:"PHP", correct:false}
+        {text:"David", correct:true},
+        {text:"Solomon", correct:false},
+        {text:"Saul", correct:false},
+        {text:"Samuel", correct:false}
+    ]
+},
+{
+    question: "Where was Jesus born?",
+    answers: [
+        {text:"Jerusalem", correct:false},
+        {text:"Nazareth", correct:false},
+        {text:"Bethlehem", correct:true},
+        {text:"Egypt", correct:false}
+    ]
+},
+{
+    question: "What is the first book of the Bible?",
+    answers: [
+        {text:"Genesis", correct:true},
+        {text:"Exodus", correct:false},
+        {text:"Matthew", correct:false},
+        {text:"Psalms", correct:false}
     ]
 }
 ];
@@ -31,89 +49,106 @@ const questions = [
 const questionElement = document.getElementById("question");
 const answerButtons = document.getElementById("answer-buttons");
 const nextButton = document.getElementById("next-btn");
+const progress = document.getElementById("progress");
+const progressFill = document.getElementById("progress-fill");
+const timer = document.getElementById("timer");
 
-let currentQuestion = 0;
+let currentQuestionIndex = 0;
 let score = 0;
 
+let timeLeft = 90;
+let countdown;
+
 function startQuiz(){
-    currentQuestion = 0;
+    currentQuestionIndex = 0;
     score = 0;
-    nextButton.innerHTML = "Next";
+
+    nextButton.innerHTML = "Next Question →";
+
+    startTimer();
+
     showQuestion();
 }
 
+function startTimer(){
+
+    clearInterval(countdown);
+
+    timeLeft = 90;
+
+    updateTimer();
+
+    countdown = setInterval(() => {
+
+        timeLeft--;
+
+        updateTimer();
+
+        if(timeLeft <= 0){
+
+            clearInterval(countdown);
+
+            showScore();
+
+        }
+
+    },1000);
+
+}
+
+function updateTimer(){
+
+    let minutes = Math.floor(timeLeft / 60);
+
+    let seconds = timeLeft % 60;
+
+    timer.innerHTML =
+        `${minutes.toString().padStart(2,"0")}:${seconds.toString().padStart(2,"0")}`;
+
+}
+
 function showQuestion(){
+
     resetState();
 
-    let current = questions[currentQuestion];
-    questionElement.innerHTML = current.question;
+    let currentQuestion = questions[currentQuestionIndex];
 
-    current.answers.forEach(answer=>{
-        const button=document.createElement("button");
-        button.innerHTML=answer.text;
+    let questionNo = currentQuestionIndex + 1;
+
+    progress.innerHTML =
+        `Question ${questionNo} of ${questions.length}`;
+
+    progressFill.style.width =
+        `${(questionNo/questions.length)*100}%`;
+
+    questionElement.innerHTML = currentQuestion.question;
+
+    currentQuestion.answers.forEach(answer=>{
+
+        const button = document.createElement("button");
+
+        button.innerHTML = answer.text;
+
         button.classList.add("btn");
 
         if(answer.correct){
-            button.dataset.correct=answer.correct;
+
+            button.dataset.correct = answer.correct;
+
         }
 
         button.addEventListener("click",selectAnswer);
+
         answerButtons.appendChild(button);
+
     });
+
 }
 
 function resetState(){
+
     nextButton.style.display="none";
 
     while(answerButtons.firstChild){
+
         answerButtons.removeChild(answerButtons.firstChild);
-    }
-}
-
-function selectAnswer(e){
-    const selected=e.target;
-    const correct=selected.dataset.correct==="true";
-
-    if(correct){
-        selected.classList.add("correct");
-        score++;
-    }else{
-        selected.classList.add("wrong");
-    }
-
-    Array.from(answerButtons.children).forEach(button=>{
-        if(button.dataset.correct==="true"){
-            button.classList.add("correct");
-        }
-        button.disabled=true;
-    });
-
-    nextButton.style.display="block";
-}
-
-function showScore(){
-    resetState();
-    questionElement.innerHTML=`You scored ${score} out of ${questions.length}!`;
-    nextButton.innerHTML="Play Again";
-    nextButton.style.display="block";
-}
-
-function handleNextButton(){
-    currentQuestion++;
-
-    if(currentQuestion<questions.length){
-        showQuestion();
-    }else{
-        showScore();
-    }
-}
-
-nextButton.addEventListener("click",()=>{
-    if(currentQuestion<questions.length){
-        handleNextButton();
-    }else{
-        startQuiz();
-    }
-});
-
-startQuiz();
