@@ -1,154 +1,451 @@
+const PASSWORD = "081360";
+const QUIZ_DURATION_SECONDS = 90;
+const ACCESS_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours
+
 const questions = [
-{
+  {
     question: "Who built the ark?",
-    answers: [
-        {text:"Abraham", correct:false},
-        {text:"Noah", correct:true},
-        {text:"Moses", correct:false},
-        {text:"David", correct:false}
-    ]
-},
-{
-    question: "How many disciples did Jesus choose?",
-    answers: [
-        {text:"10", correct:false},
-        {text:"11", correct:false},
-        {text:"12", correct:true},
-        {text:"13", correct:false}
-    ]
-},
-{
-    question: "Who killed Goliath?",
-    answers: [
-        {text:"David", correct:true},
-        {text:"Solomon", correct:false},
-        {text:"Saul", correct:false},
-        {text:"Samuel", correct:false}
-    ]
-},
-{
-    question: "Where was Jesus born?",
-    answers: [
-        {text:"Jerusalem", correct:false},
-        {text:"Nazareth", correct:false},
-        {text:"Bethlehem", correct:true},
-        {text:"Egypt", correct:false}
-    ]
-},
-{
-    question: "What is the first book of the Bible?",
-    answers: [
-        {text:"Genesis", correct:true},
-        {text:"Exodus", correct:false},
-        {text:"Matthew", correct:false},
-        {text:"Psalms", correct:false}
-    ]
-}
+    options: ["Moses", "Noah", "Abraham", "David"],
+    answer: 1
+  },
+  {
+    question: "How many days and nights did it rain during the flood?",
+    options: ["7", "20", "40", "100"],
+    answer: 2
+  },
+  {
+    question: "Who defeated Goliath?",
+    options: ["Solomon", "Paul", "David", "Elijah"],
+    answer: 2
+  },
+  {
+    question: "What was the name of Jesus’ mother?",
+    options: ["Martha", "Sarah", "Rachel", "Mary"],
+    answer: 3
+  },
+  {
+    question: "Which book comes first in the Bible?",
+    options: ["Exodus", "Genesis", "Psalms", "Matthew"],
+    answer: 1
+  }
 ];
 
-const questionElement = document.getElementById("question");
-const answerButtons = document.getElementById("answer-buttons");
-const nextButton = document.getElementById("next-btn");
-const progress = document.getElementById("progress");
-const progressFill = document.getElementById("progress-fill");
-const timer = document.getElementById("timer");
+const els = {
+  loginCard: document.getElementById("loginCard"),
+  quizCard: document.getElementById("quizCard"),
+  resultCard: document.getElementById("resultCard"),
+  loginForm: document.getElementById("loginForm"),
+  loginNotice: document.getElementById("loginNotice"),
+  studentName: document.getElementById("studentName"),
+  password: document.getElementById("password"),
+  quizUser: document.getElementById("quizUser"),
+  qNumber: document.getElementById("qNumber"),
+  qTotal: document.getElementById("qTotal"),
+  liveScore: document.getElementById("liveScore"),
+  expiryCount: document.getElementById("expiryCount"),
+  timer: document.getElementById("timer"),
+  progressBar: document.getElementById("progressBar"),
+  questionText: document.getElementById("questionText"),
+  optionsList: document.getElementById("optionsList"),
+  prevBtn: document.getElementById("prevBtn"),
+  nextBtn: document.getElementById("nextBtn"),
+  submitBtn: document.getElementById("submitBtn"),
+  resultBadge: document.getElementById("resultBadge"),
+  resultTitle: document.getElementById("resultTitle"),
+  resultName: document.getElementById("resultName"),
+  finalScore: document.getElementById("finalScore"),
+  percentage: document.getElementById("percentage"),
+  statusText: document.getElementById("statusText"),
+  correctCount: document.getElementById("correctCount"),
+  wrongCount: document.getElementById("wrongCount"),
+  resultProgress: document.getElementById("resultProgress"),
+  resultMessage: document.getElementById("resultMessage"),
+  restartBtn: document.getElementById("restartBtn"),
+  toast: document.getElementById("toast")
+};
 
-let currentQuestionIndex = 0;
-let score = 0;
+let currentQuestion = 0;
+let answers = Array(questions.length).fill(null);
+let quizStarted = false;
+let quizTimer = null;
+let accessTimer = null;
+let timeLeft = QUIZ_DURATION_SECONDS;
+let expiryTimerLeft = 0;
+let currentUser = "";
+let quizEndAt = null;
+let accessEndAt = null;
 
-let timeLeft = 90;
-let countdown;
-
-function startQuiz(){
-    currentQuestionIndex = 0;
-    score = 0;
-
-    nextButton.innerHTML = "Next Question →";
-
-    startTimer();
-
-    showQuestion();
+function now() {
+  return Date.now();
 }
 
-function startTimer(){
-
-    clearInterval(countdown);
-
-    timeLeft = 90;
-
-    updateTimer();
-
-    countdown = setInterval(() => {
-
-        timeLeft--;
-
-        updateTimer();
-
-        if(timeLeft <= 0){
-
-            clearInterval(countdown);
-
-            showScore();
-
-        }
-
-    },1000);
-
+function formatTime(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-function updateTimer(){
-
-    let minutes = Math.floor(timeLeft / 60);
-
-    let seconds = timeLeft % 60;
-
-    timer.innerHTML =
-        `${minutes.toString().padStart(2,"0")}:${seconds.toString().padStart(2,"0")}`;
-
+function formatAccess(msLeft) {
+  const totalMinutes = Math.max(0, Math.floor(msLeft / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${String(minutes).padStart(2, "0")}m`;
 }
 
-function showQuestion(){
+function showToast(message, isError = false) {
+  els.toast.textContent = message;
+  els.toast.style.borderColor = isError ? "rgba(255,91,122,0.4)" : "rgba(255,255,255,0.12)";
+  els.toast.style.color = isError ? "#ffd8df" : "#fff";
+  els.toast.classList.remove("hidden");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => els.toast.classList.add("hidden"), 2400);
+}
 
-    resetState();
+function setVisible(card) {
+  [els.loginCard, els.quizCard, els.resultCard].forEach(el => el.classList.add("hidden"));
+  card.classList.remove("hidden");
+}
 
-    let currentQuestion = questions[currentQuestionIndex];
+function saveSession() {
+  const session = {
+    currentUser,
+    quizEndAt,
+    accessEndAt,
+    currentQuestion,
+    answers,
+    quizStarted
+  };
+  localStorage.setItem("jilmBibleQuizSession", JSON.stringify(session));
+}
 
-    let questionNo = currentQuestionIndex + 1;
+function loadSession() {
+  try {
+    return JSON.parse(localStorage.getItem("jilmBibleQuizSession"));
+  } catch {
+    return null;
+  }
+}
 
-    progress.innerHTML =
-        `Question ${questionNo} of ${questions.length}`;
+function clearSession() {
+  localStorage.removeItem("jilmBibleQuizSession");
+}
 
-    progressFill.style.width =
-        `${(questionNo/questions.length)*100}%`;
+function initAccessWindow() {
+  const existing = loadSession();
+  const expired = existing?.accessEndAt && now() > existing.accessEndAt;
 
-    questionElement.innerHTML = currentQuestion.question;
+  if (existing && !expired) {
+    currentUser = existing.currentUser || "";
+    quizEndAt = existing.quizEndAt || null;
+    accessEndAt = existing.accessEndAt || null;
+    currentQuestion = existing.currentQuestion ?? 0;
+    answers = Array.isArray(existing.answers) ? existing.answers : Array(questions.length).fill(null);
+    quizStarted = !!existing.quizStarted;
+    if (currentUser && accessEndAt) {
+      if (quizStarted && quizEndAt && now() < quizEndAt) {
+        startQuizUI();
+        resumeQuiz();
+        return;
+      }
+      openResultIfFinishedOrExpired();
+      return;
+    }
+  }
 
-    currentQuestion.answers.forEach(answer=>{
+  clearSession();
+  setVisible(els.loginCard);
+  renderExpiryLabel(2 * 60 * 60 * 1000);
+}
 
-        const button = document.createElement("button");
+function openResultIfFinishedOrExpired() {
+  if (quizStarted && quizEndAt && now() > quizEndAt) {
+    finishQuiz(true);
+  } else {
+    setVisible(els.loginCard);
+  }
+}
 
-        button.innerHTML = answer.text;
+function startAccessCountdown() {
+  stopAccessTimer();
+  accessTimer = setInterval(() => {
+    if (!accessEndAt) return;
+    const msLeft = accessEndAt - now();
+    if (msLeft <= 0) {
+      clearInterval(accessTimer);
+      expireAccess();
+      return;
+    }
+    els.expiryCount.textContent = formatAccess(msLeft);
+  }, 1000);
+}
 
-        button.classList.add("btn");
+function stopAccessTimer() {
+  if (accessTimer) clearInterval(accessTimer);
+  accessTimer = null;
+}
 
-        if(answer.correct){
+function startQuizTimer() {
+  stopQuizTimer();
+  quizTimer = setInterval(() => {
+    timeLeft = Math.max(0, Math.ceil((quizEndAt - now()) / 1000));
+    els.timer.textContent = formatTime(timeLeft);
 
-            button.dataset.correct = answer.correct;
+    const ratio = (QUIZ_DURATION_SECONDS - timeLeft) / QUIZ_DURATION_SECONDS;
+    els.progressBar.style.width = `${Math.min(100, Math.max(0, ratio * 100))}%`;
 
-        }
+    if (timeLeft <= 0) {
+      finishQuiz(false);
+    }
+  }, 250);
+}
 
-        button.addEventListener("click",selectAnswer);
+function stopQuizTimer() {
+  if (quizTimer) clearInterval(quizTimer);
+  quizTimer = null;
+}
 
-        answerButtons.appendChild(button);
+function renderExpiryLabel(ms) {
+  els.expiryCount.textContent = formatAccess(ms);
+}
 
+function startQuizUI() {
+  setVisible(els.quizCard);
+  els.quizUser.textContent = `Welcome, ${currentUser}`;
+  els.qTotal.textContent = questions.length;
+  els.liveScore.textContent = scoreSoFar();
+  renderQuestion();
+  startQuizTimer();
+  startAccessCountdown();
+}
+
+function resumeQuiz() {
+  if (!quizEndAt) {
+    quizEndAt = now() + QUIZ_DURATION_SECONDS * 1000;
+  }
+  timeLeft = Math.max(0, Math.ceil((quizEndAt - now()) / 1000));
+  if (timeLeft <= 0) {
+    finishQuiz(false);
+    return;
+  }
+  startQuizUI();
+  els.timer.textContent = formatTime(timeLeft);
+  els.progressBar.style.width = `${((QUIZ_DURATION_SECONDS - timeLeft) / QUIZ_DURATION_SECONDS) * 100}%`;
+  renderQuestion();
+}
+
+function scoreSoFar() {
+  return answers.reduce((sum, ans, idx) => sum + (ans === questions[idx].answer ? 1 : 0), 0);
+}
+
+function renderQuestion() {
+  const q = questions[currentQuestion];
+  els.qNumber.textContent = currentQuestion + 1;
+  els.questionText.textContent = q.question;
+  els.optionsList.innerHTML = "";
+
+  q.options.forEach((option, idx) => {
+    const id = `q${currentQuestion}_opt${idx}`;
+    const wrapper = document.createElement("label");
+    wrapper.className = "option";
+    wrapper.setAttribute("for", id);
+
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = `question_${currentQuestion}`;
+    input.id = id;
+    input.value = idx;
+    if (answers[currentQuestion] === idx) input.checked = true;
+
+    input.addEventListener("change", () => {
+      answers[currentQuestion] = idx;
+      els.liveScore.textContent = scoreSoFar();
+      saveSession();
     });
 
+    const text = document.createElement("span");
+    text.textContent = option;
+
+    wrapper.appendChild(input);
+    wrapper.appendChild(text);
+    els.optionsList.appendChild(wrapper);
+  });
+
+  updateNavigation();
+  updateQuestionProgress();
 }
 
-function resetState(){
+function updateNavigation() {
+  els.prevBtn.disabled = currentQuestion === 0;
+  els.prevBtn.style.opacity = currentQuestion === 0 ? "0.45" : "1";
+  els.prevBtn.style.cursor = currentQuestion === 0 ? "not-allowed" : "pointer";
 
-    nextButton.style.display="none";
+  if (currentQuestion === questions.length - 1) {
+    els.nextBtn.classList.add("hidden");
+    els.submitBtn.classList.remove("hidden");
+  } else {
+    els.nextBtn.classList.remove("hidden");
+    els.submitBtn.classList.add("hidden");
+  }
+}
 
-    while(answerButtons.firstChild){
+function updateQuestionProgress() {
+  const percent = ((currentQuestion) / questions.length) * 100;
+  els.progressBar.style.width = `${percent}%`;
+}
 
-        answerButtons.removeChild(answerButtons.firstChild);
+function checkExpiration() {
+  if (accessEndAt && now() > accessEndAt) {
+    expireAccess();
+    return true;
+  }
+  return false;
+}
+
+function expireAccess() {
+  stopQuizTimer();
+  stopAccessTimer();
+  clearSession();
+  setVisible(els.loginCard);
+  els.loginNotice.textContent = "Your 2-hour access has expired. Please contact the administrator.";
+  els.loginNotice.style.color = "#ffd8df";
+  showToast("Quiz access expired.", true);
+  quizStarted = false;
+  currentUser = "";
+  answers = Array(questions.length).fill(null);
+  quizEndAt = null;
+  accessEndAt = null;
+}
+
+function finishQuiz(fromExpiry = false) {
+  stopQuizTimer();
+  stopAccessTimer();
+
+  const correct = questions.reduce((sum, q, idx) => sum + (answers[idx] === q.answer ? 1 : 0), 0);
+  const wrong = questions.length - correct;
+  const percent = Math.round((correct / questions.length) * 100);
+  const passed = percent >= 60;
+
+  quizStarted = false;
+  setVisible(els.resultCard);
+
+  els.resultBadge.textContent = fromExpiry ? "Time Completed" : "Completed";
+  els.resultTitle.textContent = passed ? "Excellent Result" : "Try Again";
+  els.resultName.textContent = `Student: ${currentUser}`;
+  els.finalScore.textContent = `${correct}/${questions.length}`;
+  els.percentage.textContent = `${percent}%`;
+  els.statusText.textContent = passed ? "Passed" : "Failed";
+  els.statusText.style.color = passed ? "var(--success)" : "var(--danger)";
+  els.correctCount.textContent = correct;
+  els.wrongCount.textContent = wrong;
+  els.resultProgress.style.width = `${percent}%`;
+
+  els.resultMessage.textContent = passed
+    ? "Well done! You have a good grasp of Bible knowledge."
+    : "Keep studying and try again. Great effort matters too.";
+
+  if (passed) {
+    els.resultBadge.style.background = "rgba(49, 214, 123, 0.14)";
+    els.resultBadge.style.borderColor = "rgba(49, 214, 123, 0.28)";
+    els.resultBadge.style.color = "#b9ffd6";
+  } else {
+    els.resultBadge.style.background = "rgba(255, 91, 122, 0.14)";
+    els.resultBadge.style.borderColor = "rgba(255, 91, 122, 0.28)";
+    els.resultBadge.style.color = "#ffd0da";
+  }
+
+  saveSession();
+}
+
+function goNext() {
+  if (currentQuestion < questions.length - 1) {
+    currentQuestion++;
+    saveSession();
+    renderQuestion();
+  }
+}
+
+function goPrev() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    saveSession();
+    renderQuestion();
+  }
+}
+
+function submitQuiz() {
+  if (!answers.some(a => a !== null)) {
+    showToast("Please answer at least one question before submitting.", true);
+    return;
+  }
+  finishQuiz(false);
+}
+
+function resetApp() {
+  clearSession();
+  currentUser = "";
+  quizStarted = false;
+  quizEndAt = null;
+  accessEndAt = null;
+  currentQuestion = 0;
+  answers = Array(questions.length).fill(null);
+  timeLeft = QUIZ_DURATION_SECONDS;
+  els.loginForm.reset();
+  els.loginNotice.textContent = "";
+  setVisible(els.loginCard);
+  renderExpiryLabel(2 * 60 * 60 * 1000);
+  showToast("Ready for a fresh start.");
+}
+
+els.loginForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  if (checkExpiration()) return;
+
+  const name = els.studentName.value.trim();
+  const pwd = els.password.value.trim();
+
+  if (!name) {
+    els.loginNotice.textContent = "Student name is required.";
+    els.loginNotice.style.color = "#ffd8df";
+    return;
+  }
+
+  if (pwd !== PASSWORD) {
+    els.loginNotice.textContent = "Incorrect password.";
+    els.loginNotice.style.color = "#ffd8df";
+    showToast("Wrong password.", true);
+    return;
+  }
+
+  currentUser = name;
+  quizStarted = true;
+  currentQuestion = 0;
+  answers = Array(questions.length).fill(null);
+  quizEndAt = now() + QUIZ_DURATION_SECONDS * 1000;
+  accessEndAt = now() + ACCESS_DURATION_MS;
+
+  saveSession();
+  els.loginNotice.textContent = "";
+  startQuizUI();
+  showToast("Login successful. Quiz started.");
+});
+
+els.prevBtn.addEventListener("click", goPrev);
+els.nextBtn.addEventListener("click", goNext);
+els.submitBtn.addEventListener("click", submitQuiz);
+els.restartBtn.addEventListener("click", resetApp);
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && quizStarted) {
+    if (checkExpiration()) return;
+    timeLeft = Math.max(0, Math.ceil((quizEndAt - now()) / 1000));
+    els.timer.textContent = formatTime(timeLeft);
+    const ratio = (QUIZ_DURATION_SECONDS - timeLeft) / QUIZ_DURATION_SECONDS;
+    els.progressBar.style.width = `${Math.min(100, Math.max(0, ratio * 100))}%`;
+  }
+});
+
+window.addEventListener("load", () => {
+  initAccessWindow();
+});
