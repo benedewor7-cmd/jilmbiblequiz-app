@@ -1,56 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bible Quiz</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bible Quiz App</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="bg">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="blob blob-3"></span>
+    <span class="blob blob-4"></span>
+    <span class="grid-overlay"></span>
+  </div>
 
-<div class="container">
+  <main class="app-shell">
+    <section class="hero">
+      <div class="brand-badge">✝️ JILM Bible Quiz</div>
+      <h1>Test Your Bible Knowledge</h1>
+      <p>Login required. 5 questions. 90 seconds. Beautiful results.</p>
+    </section>
 
-    <div class="quiz-box">
+    <section class="card login-card" id="loginCard">
+      <div class="card-header">
+        <h2>Student Login</h2>
+        <p>Enter your name and password to begin.</p>
+      </div>
 
-        <div class="header">
-            <h1>📖 Bible Quiz Challenge</h1>
-
-            <div class="top-info">
-                <span id="progress">Question 1 of 5</span>
-                <span id="timer">01:30</span>
-            </div>
-
-            <div class="progress-bar">
-                <div id="progress-fill"></div>
-            </div>
-
+      <form id="loginForm" class="form">
+        <div class="input-group">
+          <label for="studentName">Student Name</label>
+          <input type="text" id="studentName" placeholder="Enter your full name" required />
         </div>
 
-        <div class="quiz-body">
-
-            <h2 id="question">
-                Loading Question...
-            </h2>
-
-            <div id="answer-buttons">
-                <!-- Buttons created by JavaScript -->
-            </div>
-
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter password" required />
         </div>
 
-        <div class="footer">
+        <button type="submit" class="btn primary-btn">Start Quiz</button>
+        <p class="hint">Password: <strong>081360</strong></p>
+      </form>
 
-            <button id="next-btn">
-                Next Question →
-            </button>
+      <div class="notice" id="loginNotice"></div>
+    </section>
 
+    <section class="card quiz-card hidden" id="quizCard">
+      <div class="quiz-top">
+        <div>
+          <h2 id="quizTitle">Bible Quiz</h2>
+          <p id="quizUser"></p>
         </div>
 
-    </div>
+        <div class="timer-wrap">
+          <div class="timer-label">Time Left</div>
+          <div class="timer" id="timer">01:30</div>
+        </div>
+      </div>
 
-</div>
+      <div class="status-row">
+        <div class="status-pill">Question <span id="qNumber">1</span> of <span id="qTotal">5</span></div>
+        <div class="status-pill">Score: <span id="liveScore">0</span></div>
+        <div class="status-pill">Expires in: <span id="expiryCount">2h 00m</span></div>
+      </div>
 
-<script src="script.js"></script>
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
 
+      <div id="questionArea" class="question-area">
+        <h3 id="questionText"></h3>
+        <div id="optionsList" class="options-list"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn secondary-btn" id="prevBtn" type="button">Previous</button>
+        <button class="btn primary-btn" id="nextBtn" type="button">Next</button>
+        <button class="btn danger-btn hidden" id="submitBtn" type="button">Submit Quiz</button>
+      </div>
+    </section>
+
+    <section class="card result-card hidden" id="resultCard">
+      <div class="result-badge" id="resultBadge">Completed</div>
+      <h2 id="resultTitle">Your Result</h2>
+      <p id="resultName"></p>
+
+      <div class="score-circle">
+        <div class="score-inner">
+          <span id="finalScore">0/5</span>
+          <small>Score</small>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-box">
+          <span>Percentage</span>
+          <strong id="percentage">0%</strong>
+        </div>
+        <div class="result-box">
+          <span>Status</span>
+          <strong id="statusText">Pending</strong>
+        </div>
+        <div class="result-box">
+          <span>Correct</span>
+          <strong id="correctCount">0</strong>
+        </div>
+        <div class="result-box">
+          <span>Wrong</span>
+          <strong id="wrongCount">0</strong>
+        </div>
+      </div>
+
+      <div class="progress-track result-track">
+        <div class="progress-bar" id="resultProgress"></div>
+      </div>
+
+      <div class="result-message" id="resultMessage"></div>
+      <button class="btn primary-btn" id="restartBtn" type="button">Restart</button>
+    </section>
+  </main>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="script.js"></script>
 </body>
 </html>
